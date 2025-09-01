@@ -1,16 +1,22 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import productRoutes from "./routes/productRoutes.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use("/api/products", productRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
   res.send("ShopSphere Backend Running ✅");
 });
+
+app.use(notFound);
+app.use(errorHandler);
 
 // MongoDB connection
 const connectDB = async () => {

@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import products from "./data/products.js";
-import Product from "./models/Product.js";
+import Product from "./models/productModel.js";
 import connectDB from "./config/db.js";
 
 dotenv.config();
