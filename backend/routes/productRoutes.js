@@ -5,11 +5,22 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  createProductReview
 } from "../controllers/productController.js";
+import { protect, admin } from "../middleware/authMiddleware.js"; // 🔒 Import protect and admin
 
 const router = express.Router();
 
-router.route("/").get(getProducts).post(createProduct);
-router.route("/:id").get(getProductById).put(updateProduct).delete(deleteProduct);
+// Route for submitting a review
+router.route('/:id/reviews').post(protect, createProductReview);
+
+// Public read access. Admin protected write access.
+router.route("/").get(getProducts).post(protect, admin, createProduct);
+
+// Public read access. Admin protected update/delete access.
+router.route("/:id")
+  .get(getProductById)
+  .put(protect, admin, updateProduct)
+  .delete(protect, admin, deleteProduct);
 
 export default router;

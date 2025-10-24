@@ -1,3 +1,4 @@
+// data/products.js
 const products = [
   {
     name: "iPhone 14 Pro",
