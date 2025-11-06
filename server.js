@@ -10,11 +10,42 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import cors from "cors";
 
+// Load environment variables
 dotenv.config();
+
+// Initialize Express app
 const app = express();
 app.use(express.json());
 
-app.use(cors());
+// ----------------------------------------------------------------------
+// 🌟 CORS CONFIGURATION FIX 🌟
+// Use a specific allowed origin list for production/deployment
+const allowedOrigins = [
+    // This must match your Vercel frontend URL
+    process.env.FRONTEND_URL, 
+    // Always allow local development
+    'http://localhost:5173',
+    'http://10.95.30.56:5173',
+];
+
+// Configure CORS Middleware
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like Postman or cURL)
+        if (!origin) return callback(null, true); 
+        
+        // Allow if the origin is in our allowed list
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            // Log the blocked origin for debugging
+            console.log(`CORS Policy Blocked Origin: ${origin}`); 
+            callback(new Error('Not allowed by CORS'), false);
+        }
+    },
+    credentials: true, // IMPORTANT: Allows cookies (JWTs) to be sent across domains
+}));
+// ----------------------------------------------------------------------
 
 // --- START: STATIC FOLDER SETUP (MOVED TO TOP) ---
 const __dirname = path.resolve();
@@ -30,7 +61,7 @@ app.use("/api/orders", orderRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
-  res.send("ShopSphere Backend Running ✅");
+  res.send("ShopSphere Backend Running ✅");
 });
 
 app.use(notFound);
@@ -40,7 +71,5 @@ dbconnect();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
-
-
