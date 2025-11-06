@@ -17,33 +17,14 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ----------------------------------------------------------------------
-// 🌟 CORS CONFIGURATION FIX 🌟
-// Use a specific allowed origin list for production/deployment
-const allowedOrigins = [
-    // This must match your Vercel frontend URL
-    process.env.FRONTEND_URL, 
-    // Always allow local development
-    'http://localhost:5173',
-    'http://10.95.30.56:5173',
-];
-
-// Configure CORS Middleware
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like Postman or cURL)
-        if (!origin) return callback(null, true); 
-        
-        // Allow if the origin is in our allowed list
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            // Log the blocked origin for debugging
-            console.log(`CORS Policy Blocked Origin: ${origin}`); 
-            callback(new Error('Not allowed by CORS'), false);
-        }
-    },
-    credentials: true, // IMPORTANT: Allows cookies (JWTs) to be sent across domains
+    origin: [
+        'https://shop-sphere-ui.vercel.app',
+        'http://localhost:5173',
+        'http://10.95.30.56:5173'
+    ],
+    credentials: true, // This is crucial for RTK Query
+    exposedHeaders: ['Authorization'] // Expose Authorization header if needed
 }));
 // ----------------------------------------------------------------------
 
