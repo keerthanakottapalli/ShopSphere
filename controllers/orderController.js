@@ -1,28 +1,31 @@
 import asyncHandler from "express-async-handler";
 import Order from "../models/orderModel.js";
-import Product from "../models/productModel.js"; // Needed to update product stock
 
 // @desc    Create new order
 // @route   POST /api/orders
-// @access  Private (Requires JWT token)
+// @access  Private
 const addOrderItems = asyncHandler(async (req, res) => {
     const {
         orderItems,
         shippingAddress,
         paymentMethod,
-        itemsPrice, // Total price of all items (calculated on frontend)
+        itemsPrice,
         taxPrice,
         shippingPrice,
         totalPrice,
     } = req.body;
 
-    if (!orderItems || orderItems.length === 0) {
+    if (orderItems && orderItems.length === 0) {
         res.status(400);
-        throw new Error("No order items");
+        throw new Error('No order items');
     } else {
         const order = new Order({
-            user: req.user._id, // Set from the 'protect' middleware
-            orderItems,
+            user: req.user._id, // Assumes user ID is available via protect middleware
+            orderItems: orderItems.map((x) => ({
+                ...x,
+                product: x._id, // Map the item _id to the product field in the schema
+                _id: undefined, // Remove the original item _id to avoid collision
+            })),
             shippingAddress,
             paymentMethod,
             itemsPrice,
@@ -30,8 +33,6 @@ const addOrderItems = asyncHandler(async (req, res) => {
             shippingPrice,
             totalPrice,
         });
-
-        // ⚠️ Future Improvement: Decrease product stock here 
 
         const createdOrder = await order.save();
         res.status(201).json(createdOrder);
@@ -77,33 +78,39 @@ const getOrders = asyncHandler(async (req, res) => {
     res.json(orders);
 });
 
-// @desc    Update order to PAID (Admin only, or webhook)
+// @desc    Update order to paid
 // @route   PUT /api/orders/:id/pay
-// @access  Private (Owner/Admin)
+// @access  Private
 const updateOrderToPaid = asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id);
 
     if (order) {
         order.isPaid = true;
         order.paidAt = Date.now();
-        
-        // 🔑 Note: In a real app, the req.body would contain payment details 
-        // from a service like Stripe/PayPal and you'd use that data here.
+        // PayPal details passed from the successful transaction
         order.paymentResult = {
             id: req.body.id,
             status: req.body.status,
-            update_time: Date.now(),
-            email_address: req.body.payer_email,
+            update_time: req.body.update_time,
+            email_address: req.body.payer.email_address,
         };
 
         const updatedOrder = await order.save();
-        res.json(updatedOrder);
+        res.status(200).json(updatedOrder);
     } else {
         res.status(404);
         throw new Error('Order not found');
     }
 });
 
+// @desc    Get PayPal client ID
+// @route   GET /api/orders/config/paypal
+// @access  Private
+const getPayPalClientId = asyncHandler(async (req, res) => {
+    // The client ID is loaded from the .env file (process.env.PAYPAL_CLIENT_ID)
+    // We send it back as a JSON object: { clientId: '...' }
+    res.status(200).json({ clientId: process.env.PAYPAL_CLIENT_ID });
+});
 
 // @desc    Update order to DELIVERED (Admin only)
 // @route   PUT /api/orders/:id/deliver
@@ -130,5 +137,6 @@ export {
     getMyOrders, 
     getOrders, 
     updateOrderToPaid, 
+    getPayPalClientId,
     updateOrderToDelivered 
 };

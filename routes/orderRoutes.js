@@ -6,6 +6,7 @@ import {
     getOrders,
     updateOrderToPaid,
     updateOrderToDelivered,
+    getPayPalClientId
 } from "../controllers/orderController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 
@@ -20,9 +21,12 @@ router.route('/').post(protect, addOrderItems);
 router.route('/:id').get(protect, getOrderById);
 
 
-// 2. Admin Routes
-// GET /api/orders -> Get ALL orders
-router.route('/').get(protect, admin, getOrders);
+
+router.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);
+
+// NOTE: The config route must come BEFORE the :id route
+router.route('/config/paypal').get(protect, getPayPalClientId);
+
 // PUT /api/orders/:id/deliver -> Mark as delivered
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
 
